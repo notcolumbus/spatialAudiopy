@@ -1,2 +1,2 @@
-# spatialAudiopy
-Robust python framework for Spatial Audio
+# spatialAudiopy : A Robust Python Framework for Spatial Audio
+
