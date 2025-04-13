@@ -1,36 +1,62 @@
 # spatialAudiopy: A Spatial Audio Framework
 
-**spatialAudiopy** is a Python framework designed to simulate realistic spatial audio through the use of head-related transfer functions (HRTF). In this framework, the **Speaker** class is the core object that represents a sound source in a virtual space. It uses pre-measured HRTF data from the MIT Kemar dataset to accurately spatialize audio.
+**spatialAudiopy** is a lightweight Python framework designed to simulate realistic spatial audio using head-related transfer functions (HRTF). It uses pre-measured HRIRs (Head-Related Impulse Responses) from the MIT Kemar dataset to spatialize audio, making it seem as if sounds are coming from specific directions in a virtual space.
 
 ## The Speaker Class
 
-The **Speaker** class encapsulates a sound source's properties and its spatialization process. When you create an instance of this class, you specify:
+The **Speaker** class is the core building block of spatialAudiopy. It represents a sound source in 3D space by storing its direction and the audio file that will be spatialized.
 
-- **Azimuth (azi):** The horizontal angle in degrees at which the sound source is located relative to the listener.
-- **Elevation (elev):** The vertical angle in degrees for the sound source.
-- **Distance (dist):** The distance from the listener (this parameter can be used to further simulate distance effects).
-- **Track:** The audio file to be spatialized.
+### Constructor Parameters
+
+When you create a Speaker object, you need to provide:
+
+- **Azimuth (azi):**  
+  This is a horizontal angle, in degrees, that tells you where the sound is coming from.  
+  - **0°** means the sound is coming from directly in front of you.
+  - **90°** means it is coming from your right.
+  - **270° (or -90°)** means it is coming from your left.
+  
+  *Note:* The MIT Kemar HRTF dataset often has measurements for a limited range (typically from 0° to about 80°). If you specify an azimuth outside this range, the framework maps the angle into the available range and flips the HRIR channels if needed so that you can simulate 360° coverage.
+
+- **Elevation (elev):**  
+  This is the vertical angle, in degrees, of the sound source.  
+  - **0°** means the sound is level with your ears.
+  
+  *Note:* The Kemar dataset provides HRIRs at specific elevation angles (e.g., -40, 0, 10, etc.). You need to choose an elevation that is available in the dataset.
+
+- **Distance (dist):**  
+  This value indicates how far the sound source is from the listener. Although not fully implemented for acoustical distance effects in this version, it can be used later for further simulation (e.g., changing volume or adding delay).
+
+- **Track:**  
+  This is the audio file (for example, `"flute.mp3"`) that will be spatialized.
 
 ### How It Works
 
 1. **HRTF Data from MIT Kemar:**  
-   The framework leverages the MIT Kemar HRTF dataset. This dataset contains impulse responses measured on a mannequin (Kemar) at different azimuths and elevations. The dataset is organized in folders (for example, `elev-40`, `elev0`, `elev10`, etc.) and the files are named according to the measured angles. The Speaker class uses these measurements to apply the appropriate HRTF to a given audio signal.
+   The Speaker class uses HRIR data from the MIT Kemar HRTF dataset. The dataset is organized in folders based on elevation (e.g., `elev-40`, `elev0`, `elev10`, etc.) and the files are named by their measured azimuth angles.
 
 2. **Automatic HRIR Selection:**  
-   Based on the desired azimuth and elevation, the Speaker class automatically selects the HRIR file that best matches these parameters. If a full 360° coverage is required but your available HRIRs only cover a limited azimuth range (e.g., 0° to 80°), the framework maps the given angle into the available range and—if necessary—flips the channels. This method ensures realistic spatial cues regardless of where the sound source is placed.
+   When you specify an azimuth and elevation, the class automatically selects the HRIR file that best matches those angles. If your chosen azimuth falls outside the measured range (for example, a value above 180°), the code normalizes and flips it so that the correct HRIR is used.
 
 3. **Resampling and Convolution:**  
-   To ensure that both the input audio and the HRIR share the same sample rate, the framework includes helper functions to resample the signals. Once the rates are aligned, the audio signal is convolved with the selected HRIR. This convolution creates a binaural effect, simulating the time delays and spectral modifications introduced by the listener’s head and ears.
+   The audio track is resampled to match the HRIR’s sample rate. Then, the audio is convolved with the HRIR for both the left and right channels. This process mimics how sounds arrive at your ears with slight differences in time and frequency response.
 
 ## Example Usage
 
-Here’s a short example of how you might use the Speaker class within your code:
+Below are a few simple examples of how to create Speaker objects and spatialize audio:
 
 ```python
 from spatialAudiopy import Speaker
 
-# Create a speaker at a desired azimuth (in degrees), elevation, and provide the audio file.
-sp1 = Speaker(azi=90, elev=0, dist=0, track="flute.mp3")
+# Example 1: Sound coming from directly in front (0° azimuth, level with the ears)
+speaker_front = Speaker(azi=0, elev=0, dist=0, track="flute.mp3")
+speaker_front.spatialize()  # Simulates sound coming from the front.
 
-# Spatialize the audio file using the closest matching HRIR from the Kemar dataset.
-sp1.spatialize()
+# Example 2: Sound coming from the right (e.g., 60° azimuth)
+speaker_right = Speaker(azi=60, elev=0, dist=0, track="flute.mp3")
+speaker_right.spatialize()  # Simulates sound coming from your right side.
+
+# Example 3: Sound from an extreme angle (e.g., 250° azimuth)
+# Here, 250° is normalized and flipped to simulate sound from the left.
+speaker_left = Speaker(azi=250, elev=0, dist=0, track="flute.mp3")
+speaker_left.spatialize()  # Simulates sound coming from your left side.
