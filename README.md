@@ -22,10 +22,10 @@ When you create a Speaker object, you need to provide:
   This is the vertical angle, in degrees, of the sound source.  
   - **0°** means the sound is level with your ears.
   
-  *Note:* The Kemar dataset provides HRIRs at specific elevation angles (e.g., -40, 0, 10, etc.). You can choose any value from 90(top) or -90(bottom), the Speaker class will automatically choose the most appropriate HRIR.
+  *Note:* The Kemar dataset provides HRIRs at specific elevation angles (e.g., -40, 0, 10, etc.). You can choose any value from 90(top) to -90(bottom), the Speaker class will automatically choose the most appropriate HRIR.
 
 - **Distance (dist):**  
-  This value indicates how far the sound source is from the listener. Although not fully implemented for acoustical distance effects in this version, it can be used later for further simulation (e.g., changing volume or adding delay).
+  This value indicates how far the sound source is from the listener. Although not fully implemented as of now.
 
 - **Track:**  
   This is the audio file (for example, `"flute.mp3"`) that will be spatialized.
