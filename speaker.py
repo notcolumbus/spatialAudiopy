@@ -70,7 +70,7 @@ class Speaker():
         self.dist = dist
         self.track = track
 
-    def spatialise(self):
+    def spatialize(self):
         HRIR = get_HRIR(self.azi,self.elev)
         print(HRIR)
         HRIR_data, fs = sf.read(HRIR)
@@ -80,4 +80,4 @@ class Speaker():
 
 if __name__ == "__main__":
     sp1 = Speaker(999,0,0,"flute.mp3")
-    sp1.spatialise()
+    sp1.spatialize()

@@ -33,4 +33,4 @@ from spatialAudiopy import Speaker
 sp1 = Speaker(azi=90, elev=0, dist=0, track="flute.mp3")
 
 # Spatialize the audio file using the closest matching HRIR from the Kemar dataset.
-sp1.spatialise()
+sp1.spatialize()
