@@ -90,20 +90,36 @@ class Speaker():
         self.track = track
 
     def spatialize(self):
-        HRIR_file, flip_flag = get_HRIR(self.azi, self.elev)
-        print(f"Selected HRIR file: {HRIR_file} (Flip: {flip_flag})")
+        HRIR, flip_flag = get_HRIR(self.azi, self.elev)
+        print(f"Selected HRIR file: {HRIR} (Flip: {flip_flag})")
         
         # Read the HRIR file.
-        HRIR_data, fs = sf.read(HRIR_file)
+        HRIR_data, fs = sf.read(HRIR)
+
         # Flip HRIR if needed.
         if flip_flag:
             HRIR_data = np.flip(HRIR_data, axis=1)
 
         Audio, fs2 = sf.read(self.track)
-        
+        # Converting user submitted track to mono for convolution
+        if Audio.shape[1] >1:
+            audio_mono = np.mean(Audio, axis = 1)
+        else:
+            audio_mono = Audio
+
         # Resample signals to ensure sample rates are identical.
-        resample_signals(HRIR_data, fs, Audio, fs2)
+        HRIR_data, common_fs, audio_mono, common_fs = resample_signals(HRIR_data, fs, audio_mono, fs2)
+
+        # Convolving the impulse respons with the Audio track
+        signal_L = np.convolve(audio_mono, HRIR_data[:,0])
+        signal_R = np.convolve(audio_mono, HRIR_data[:,1])
+
+        # Generating audio file from both channels
+        spatial_mix = np.vstack([signal_L, signal_R]).transpose()
+        sf.write("test.wav", spatial_mix, common_fs)
+
+
 
 if __name__ == "__main__":
-    sp1 = Speaker(375, 0, 0, "flute.mp3")
+    sp1 = Speaker(90, 90, 0, "flute.mp3")
     sp1.spatialize()
