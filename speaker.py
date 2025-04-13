@@ -8,7 +8,6 @@ import os
 
 # Helper functions
 def resample_signals(s1, f1, s2, f2):
-    
     common_fs = max(f1, f2)
     if f1 != common_fs:
         s1 = resample_signal(s1, orig_sr=f1, target_sr=common_fs)
@@ -18,7 +17,6 @@ def resample_signals(s1, f1, s2, f2):
     return s1, common_fs, s2, common_fs
 
 def resample_signal(signal_data, orig_sr, target_sr):
-
     if orig_sr == target_sr:
         return signal_data
     if signal_data.ndim == 1:
@@ -28,7 +26,6 @@ def resample_signal(signal_data, orig_sr, target_sr):
 
 def nround(x, base=10):
     return base * round(float(x) / base)
-
 
 def parse_elev(folder_name):
     elev_str = folder_name.replace("elev", "")
@@ -43,25 +40,47 @@ def parse_angle(filename):
     return int(angle_str)
 
 def get_HRIR(desired_azi, desired_elev):
+    """
+    Finds the closest HRIR file based on desired azimuth and elevation.
+    Also returns a flag indicating whether the HRIR should be flipped for proper 360° coverage.
+    """
+    desired_azi_norm = desired_azi % 360
+
+    # If the normalized azimuth is greater than 180, flip is needed.
+    if desired_azi_norm > 180:
+        effective_azi = 360 - desired_azi_norm
+        flip_flag = True
+    else:
+        effective_azi = desired_azi_norm
+        flip_flag = False
+
+    # Use effective_azi for selecting the HRIR file.
     root_path = "hrtf"
     folders = sorted(glob.glob(os.path.join(root_path, "elev*")))
     if not folders:
         raise FileNotFoundError(f"No elevation folders found in {root_path}")
+    
+    # Choose the folder with elevation closest to desired_elev.
     elev_diffs = {}
     for folder in folders:
         elev_val = parse_elev(os.path.basename(folder))
         elev_diffs[folder] = abs(elev_val - desired_elev)
     chosen_elev_folder = min(elev_diffs, key=elev_diffs.get)
+    
+    # List all .wav files in that folder.
     wav_files = sorted(glob.glob(os.path.join(chosen_elev_folder, "*.wav")))
     if not wav_files:
         raise FileNotFoundError(f"No .wav files found in folder {chosen_elev_folder}")
-    target_azi = abs(desired_azi)
+    
+    # Use the effective azimuth as target for comparison.
+    target_azi = effective_azi
     angle_diffs = {}
     for wav_file in wav_files:
         angle_val = parse_angle(wav_file)
         angle_diffs[wav_file] = abs(angle_val - target_azi)
     closest_file = min(angle_diffs, key=angle_diffs.get)
-    return closest_file
+    
+    return closest_file, flip_flag
 
 class Speaker():
     def __init__(self, azi, elev, dist, track):
@@ -71,13 +90,20 @@ class Speaker():
         self.track = track
 
     def spatialize(self):
-        HRIR = get_HRIR(self.azi,self.elev)
-        print(HRIR)
-        HRIR_data, fs = sf.read(HRIR)
-        Audio, fs2 = sf.read(self.track)
-        resample_signals(HRIR_data, fs, Audio, fs2 )
+        HRIR_file, flip_flag = get_HRIR(self.azi, self.elev)
+        print(f"Selected HRIR file: {HRIR_file} (Flip: {flip_flag})")
+        
+        # Read the HRIR file.
+        HRIR_data, fs = sf.read(HRIR_file)
+        # Flip HRIR if needed.
+        if flip_flag:
+            HRIR_data = np.flip(HRIR_data, axis=1)
 
+        Audio, fs2 = sf.read(self.track)
+        
+        # Resample signals to ensure sample rates are identical.
+        resample_signals(HRIR_data, fs, Audio, fs2)
 
 if __name__ == "__main__":
-    sp1 = Speaker(999,0,0,"flute.mp3")
+    sp1 = Speaker(375, 0, 0, "flute.mp3")
     sp1.spatialize()
