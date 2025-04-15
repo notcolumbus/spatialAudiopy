@@ -1,6 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import sys, glob
+import  glob
 import soundfile as sf
 import librosa
 from scipy import signal
@@ -91,7 +90,7 @@ class Speaker():
 
     def spatialize(self):
         HRIR, flip_flag = get_HRIR(self.azi, self.elev)
-        print(f"Selected HRIR file: {HRIR} (Flip: {flip_flag})")
+        print(f"Selected HRIR: {HRIR} (Flip: {flip_flag})")
         
         # Read the HRIR file.
         HRIR_data, fs = sf.read(HRIR)
@@ -116,10 +115,10 @@ class Speaker():
 
         # Generating audio file from both channels
         spatial_mix = np.vstack([signal_L, signal_R]).transpose()
-        sf.write("test.wav", spatial_mix, common_fs)
+        sf.write("krish.wav", spatial_mix, common_fs)
 
 
 
 if __name__ == "__main__":
-    sp1 = Speaker(90, 90, 0, "flute.mp3")
+    sp1 = Speaker(40, 40, 0, "679.mp3")
     sp1.spatialize()
